@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "「課題用」VPCとEC2を作成するテンプレート"
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: MyVPC
+
+  MySubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: ap-northeast-1a
+      Tags:
+        - Key: Name
+          Value: MySubnet
+
+  MyInternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref MyInternetGateway
+
+  MyRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+
+  MyRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref MyRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MyInternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref MySubnet
+      RouteTableId: !Ref MyRouteTable
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  MyEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0c3fd0f5d33134a76  # ap-northeast-1 (Tokyo) のAmazon Linux 2
+      SubnetId: !Ref MySubnet
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      KeyName: AWS-study  #キーペア名を入力
+
