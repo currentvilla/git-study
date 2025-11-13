@@ -1,1 +1,2 @@
-README
+基本的なAWSの構成をつくるCloudformationのテンプレートを作成
+-Cloudwatch・WAF等も追加
